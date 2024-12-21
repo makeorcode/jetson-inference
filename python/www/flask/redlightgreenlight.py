@@ -32,6 +32,7 @@ class RedLightGreenLight():
         self.red_transition_wait = 0
         print(sd.query_devices())
         self.play_sound(SOUND_INTRO)
+        self.pose_id_is_shot = {}
         
     
     def Process(self, poses: List[poseNet.ObjectPose.Keypoint]):
@@ -54,7 +55,7 @@ class RedLightGreenLight():
             else:
                 print("Green Light")
                 self.play_sound(SOUND_GREEN_LIGHT)
-                self.clear_averages()
+                self.clear_values()
             
             # Reset the timer to some random new time
             self.game_timer = np.random.randint(MIN_TIME_WAIT,MAX_TIME_WAIT)
@@ -75,11 +76,20 @@ class RedLightGreenLight():
                     #print(pose)
                     #print(pose.Keypoints)
                     #print("Links", pose.Links)
-                    movement_found = self.check_pose(pose)
-                    self.avg_pose(pose)
                     
+                    # If a shot has already been registered for this ID
+                    # Move to the next pose
+                    if pose.ID in self.pose_id_is_shot and self.pose_id_is_shot[pose.ID] == True:
+                        print(f"{pose.ID} already shot")
+                        continue
+                    
+                    # Check for movement with the current pose
+                    movement_found = self.check_pose(pose)                 
                     if movement_found:
-                        break
+                        self.pose_id_is_shot[pose.ID] = True
+                    
+                    # Average pose to track only large movement
+                    self.avg_pose(pose)
                     
                 if movement_found:
                     self.play_sound(SOUND_GUN_SHOT)
@@ -142,8 +152,9 @@ class RedLightGreenLight():
                     #print(f"{pose_key} {averages}")
                     #print(averages)
                     
-    def clear_averages(self):
+    def clear_values(self):
         self.poses_avg = {}
+        self.pose_id_is_shot = {}
     
     def play_sound_in_thread(self, sound_name: str, sound_dir: str = SOUND_DIR):
         thread = threading.Thread(target=self.play_sound_in_thread, args=(sound_name, sound_dir))
