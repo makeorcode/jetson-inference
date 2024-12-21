@@ -22,6 +22,7 @@
 
 from jetson_inference import imageNet, detectNet, segNet, poseNet, actionNet, backgroundNet
 from jetson_utils import cudaFont, cudaAllocMapped, Log
+from redlightgreenlight import RedLightGreenLight
 
 
 class Model:
@@ -45,6 +46,7 @@ class Model:
         self.enabled = True
         self.results = None
         self.frames = 0
+        self.rlgl = RedLightGreenLight()
         
         if type == 'classification':
             self.net = imageNet(model=model, labels=labels, input_blob=input_layer, output_blob=output_layer)
@@ -103,6 +105,14 @@ class Model:
             self.results = self.net.Process(img)
         elif self.type == 'pose':
             self.results = self.net.Process(img)
+
+            # ----------------------------------
+            # MAKEorCODE ADDED
+            # ----------------------------------
+            poses = self.results
+            self.rlgl.Process(poses)
+            # ----------------------------------
+        
         
         self.frames += 1
         return self.results
